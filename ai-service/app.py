@@ -19,19 +19,24 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.get("/")
 def root():
-    return {"message": "AI service working"}
+    return {"message": "AI service working on port 5000"}
 
 @app.post("/predict")
-async def predict(image: UploadFile = File(...)):
-    file_path = os.path.join(UPLOAD_DIR, image.filename)
+async def predict(file: UploadFile = File(...)):
+    try:
+        file_path = os.path.join(UPLOAD_DIR, file.filename)
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(image.file, buffer)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
 
-    result = predict_disease(file_path)
+        result = predict_disease(file_path)
 
-    return {
-        "success": True,
-        "disease": result["disease"],
-        "confidence": result["confidence"]
-    }
+        return {
+            "success": True,
+            **result
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }

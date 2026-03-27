@@ -240,10 +240,13 @@ const handleAnalyze = async () => {
     } catch {
       throw new Error('Backend did not return JSON')
     }
+console.log('AI response status:', response.status)
+console.log('AI response data:', data)
 
-    if (!response.ok) {
-      throw new Error(data.error || 'Backend request failed')
-    }
+if (!response.ok) {
+  throw new Error(data.detail || data.error || 'Backend request failed')
+}
+    
 
     setResult(data)
   } catch (error) {

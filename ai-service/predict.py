@@ -17,6 +17,29 @@ with open(CLASS_NAMES_PATH, "r") as f:
 
 index_to_class = {i: name for i, name in enumerate(class_names)}
 
+treatments = {
+    "black_spot": "Remove infected leaves and apply fungicide.",
+    "healthy": "No disease detected. Maintain normal care.",
+    "not_rose": "Invalid image. Please upload a rose leaf image.",
+    "powdery_mildew": "Apply sulfur-based fungicide or neem oil spray.",
+    "uncertain": "Upload a clearer image. Manual inspection recommended."
+}
+
+product_map = {
+    "black_spot": {
+        "name": "Rose Fungicide Spray",
+        "slug": "rose-fungicide-spray"
+    },
+    "powdery_mildew": {
+        "name": "Mildew Control Spray",
+        "slug": "mildew-control-spray"
+    },
+    "healthy": {
+        "name": "Rose Growth Booster",
+        "slug": "rose-growth-booster"
+    }
+}
+
 def predict_disease(file_path):
     img = Image.open(file_path).convert("RGB")
     img = img.resize(IMG_SIZE, Image.Resampling.BILINEAR)
@@ -35,6 +58,10 @@ def predict_disease(file_path):
         predicted_class = "uncertain"
 
     return {
+        "prediction": predicted_class,
         "disease": predicted_class,
-        "confidence": round(confidence, 2)
+        "confidence": round(confidence, 2),
+        "treatment": treatments.get(predicted_class, "Manual inspection recommended."),
+        "suggestion": treatments.get(predicted_class, "Manual inspection recommended."),
+        "suggestedProduct": product_map.get(predicted_class)
     }
