@@ -1,0 +1,59 @@
+# v0 runtime files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+node_modules/
+.next/
+out/
+dist/
+build/
+
+# Backend
+backend/target/
+target/
+*.class
+*.jar
+*.war
+
+# AI / Python
+ai-service/venv/
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.joblib
+
+# Data / uploads / models
+uploads/
+dataset/
+datasets/
+data/
+models/
+checkpoints/
+media/
+static/uploads/
+
+# Env
+.env
+.env.local
+.env.*.local
+.env*.local
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
