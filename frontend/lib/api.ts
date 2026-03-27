@@ -9,6 +9,7 @@ export async function fetchFromBackend(
   const response = await fetch(`${BACKEND_URL}${endpoint}`, {
     ...options,
     headers: {
+      Accept: 'application/json',
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options?.headers || {}),
     },

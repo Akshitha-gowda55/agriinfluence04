@@ -101,6 +101,12 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('')
 
   useEffect(() => {
+    if (user?.name) {
+      setCustomerName(user.name)
+    }
+  }, [user])
+
+  useEffect(() => {
     if (mode === 'buy-now') {
       const raw = localStorage.getItem('buy-now-item')
       if (raw) {
@@ -114,7 +120,7 @@ export default function CheckoutPage() {
             quantity: Number(parsed.quantity || 1),
           })
         } catch (error) {
-          console.error(error)
+          console.error('Failed to parse buy-now-item:', error)
           setBuyNowItem(null)
         }
       }
@@ -136,7 +142,7 @@ export default function CheckoutPage() {
         const products: Product[] = await fetchFromBackend('/api/products')
         const aliases = PRODUCT_ALIAS_MAP[suggestedProductSlug] || []
 
-        let matchedProduct =
+        const matchedProduct =
           products.find((product) => slugify(product.name) === suggestedProductSlug) ||
           products.find((product) =>
             aliases.includes(product.name.toLowerCase().trim())
@@ -164,7 +170,7 @@ export default function CheckoutPage() {
           quantity: 1,
         })
       } catch (error) {
-        console.error(error)
+        console.error('Failed to load suggested product:', error)
         setSuggestedItem(null)
       } finally {
         setLoadingSuggestedProduct(false)
@@ -193,7 +199,10 @@ export default function CheckoutPage() {
   }, [suggestedProductSlug, suggestedItem, mode, buyNowItem, cartItems])
 
   const totalAmount = useMemo(() => {
-    return checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    return checkoutItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    )
   }, [checkoutItems])
 
   const loadRazorpayScript = () => {
@@ -248,7 +257,12 @@ export default function CheckoutPage() {
         }),
       })
 
-      const firstProductId = checkoutItems[0].id
+      const firstProductId = checkoutItems[0]?.id
+
+      if (!firstProductId) {
+        alert('Product ID not found')
+        return
+      }
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -259,23 +273,29 @@ export default function CheckoutPage() {
         order_id: razorpayOrder.id,
         handler: async function (response: any) {
           try {
+            const orderPayload = {
+              userId: user?.id ?? null,
+              customerName: customerName.trim(),
+              phone: phone.trim(),
+              address: address.trim(),
+              totalAmount: totalAmount,
+              paymentId: response.razorpay_payment_id,
+              status: 'PENDING',
+            }
+
+            console.log('productId:', firstProductId)
+            console.log('order payload:', orderPayload)
+
             const savedOrder = await fetchFromBackend(
               `/api/orders?productId=${firstProductId}`,
               {
                 method: 'POST',
-                body: JSON.stringify({
-                  userId: Number(user.id),
-                  customerName: customerName.trim(),
-                  phone: phone.trim(),
-                  address: address.trim(),
-                  totalAmount,
-                  paymentId: response.razorpay_payment_id,
-                  status: 'PENDING',
-                }),
+                body: JSON.stringify(orderPayload),
               }
             )
 
             if (suggestedProductSlug) {
+              // do not clear cart for suggested direct checkout
             } else if (mode === 'buy-now') {
               localStorage.removeItem('buy-now-item')
             } else {
@@ -284,9 +304,9 @@ export default function CheckoutPage() {
 
             localStorage.setItem('orderPhone', phone.trim())
             router.push(`/success?orderId=${savedOrder.id}`)
-          } catch (error) {
-            console.error(error)
-            alert('Payment succeeded but order saving failed')
+          } catch (error: any) {
+            console.error('Order saving failed:', error)
+            alert(error?.message || 'Payment succeeded but order saving failed')
           }
         },
         prefill: {

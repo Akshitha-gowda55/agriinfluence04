@@ -4,6 +4,7 @@ import com.agri.agriinfluence.entity.Order;
 import com.agri.agriinfluence.entity.Product;
 import com.agri.agriinfluence.repository.ProductRepository;
 import com.agri.agriinfluence.service.OrderService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping(value = "/api/orders", produces = MediaType.APPLICATION_JSON_VALUE)
 @CrossOrigin(origins = "http://localhost:3000")
 public class OrderController {
 
@@ -30,7 +31,8 @@ public class OrderController {
             Product product = productRepository.findById(productId).orElse(null);
 
             if (product == null) {
-                return ResponseEntity.badRequest().body("Product not found");
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Product not found for productId: " + productId));
             }
 
             order.setShopkeeperId(product.getShopkeeperId());
@@ -41,13 +43,17 @@ public class OrderController {
 
             Order savedOrder = orderService.saveOrder(order);
             return ResponseEntity.ok(savedOrder);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Failed to create order");
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Failed to create order", "error", e.getMessage()));
         }
     }
-
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
@@ -58,24 +64,30 @@ public class OrderController {
         Optional<Order> order = orderService.getOrderById(id);
 
         if (order.isEmpty()) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(404)
+                    .body(Map.of("message", "Order not found"));
         }
 
         return ResponseEntity.ok(order.get());
     }
 
     @GetMapping("/track/{phone}")
-    public ResponseEntity<List<Order>> trackOrdersByPhone(@PathVariable String phone) {
+    public ResponseEntity<?> trackOrdersByPhone(@PathVariable String phone) {
         List<Order> orders = orderService.getAllOrders()
                 .stream()
                 .filter(order -> order.getPhone() != null && order.getPhone().equals(phone))
                 .toList();
 
+        if (orders.isEmpty()) {
+            return ResponseEntity.status(404)
+                    .body(Map.of("message", "No orders found for this phone number"));
+        }
+
         return ResponseEntity.ok(orders);
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Order>> getOrdersByUserId(@PathVariable Long userId) {
+    public ResponseEntity<?> getOrdersByUserId(@PathVariable Long userId) {
         List<Order> orders = orderService.getAllOrders()
                 .stream()
                 .filter(order -> order.getUserId() != null && order.getUserId().equals(userId))
@@ -85,7 +97,7 @@ public class OrderController {
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<Order>> getOrdersByStatus(@PathVariable String status) {
+    public ResponseEntity<?> getOrdersByStatus(@PathVariable String status) {
         List<Order> orders = orderService.getAllOrders()
                 .stream()
                 .filter(order -> order.getStatus() != null && order.getStatus().equalsIgnoreCase(status))
@@ -100,15 +112,19 @@ public class OrderController {
             String status = body.get("status");
 
             if (status == null || status.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body("Status is required");
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", "Status is required"));
             }
 
             Order updatedOrder = orderService.updateOrderStatus(id, status.trim());
             return ResponseEntity.ok(updatedOrder);
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Failed to update order status");
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("message", "Failed to update order status"));
         }
     }
 }

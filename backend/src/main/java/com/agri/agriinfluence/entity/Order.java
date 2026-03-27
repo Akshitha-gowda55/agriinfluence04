@@ -9,7 +9,7 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    private Boolean otpVerified = false;
     private Long userId;
     private Long shopkeeperId;
 
@@ -42,7 +42,13 @@ public class Order {
         this.paymentId = paymentId;
         this.status = status;
     }
+    public Boolean getOtpVerified() {
+        return otpVerified;
+    }
 
+    public void setOtpVerified(Boolean otpVerified) {
+        this.otpVerified = otpVerified;
+    }
     public Long getId() {
         return id;
     }
